@@ -1,0 +1,266 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    function isAllowlistedAdminEmail() {
+      return isSignedIn() && request.auth.token.email in ["admin@variagrofoods.com"];
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function orderCreatePayloadIsValid() {
+      return request.resource.data.keys().hasAll([
+          "userId",
+          "items",
+          "subtotal",
+          "deliveryCharge",
+          "total",
+          "paymentMethod",
+          "paymentStatus",
+          "status",
+          "customerName",
+          "phone",
+          "deliveryAddress",
+          "createdAt",
+          "updatedAt"
+        ]) &&
+        request.resource.data.keys().hasOnly([
+          "userId",
+          "items",
+          "subtotal",
+          "deliveryCharge",
+          "total",
+          "paymentMethod",
+          "paymentStatus",
+          "status",
+          "customerName",
+          "phone",
+          "deliveryAddress",
+          "createdAt",
+          "updatedAt"
+        ]) &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.items is list &&
+        request.resource.data.items.size() > 0 &&
+        request.resource.data.subtotal is number &&
+        request.resource.data.deliveryCharge is number &&
+        request.resource.data.total is number &&
+        request.resource.data.total >= 0 &&
+        (request.resource.data.paymentMethod == "online" || request.resource.data.paymentMethod == "cod") &&
+        request.resource.data.paymentStatus == "pending" &&
+        request.resource.data.status == "placed";
+    }
+
+    function orderStatusTransitionIsValid(fromStatus, toStatus) {
+      return (
+        (fromStatus == "placed" && (toStatus == "processing" || toStatus == "cancelled")) ||
+        (fromStatus == "processing" && (toStatus == "shipped" || toStatus == "cancelled")) ||
+        (fromStatus == "shipped" && (toStatus == "delivered" || toStatus == "cancelled")) ||
+        (fromStatus == "delivered" && toStatus == "delivered") ||
+        (fromStatus == "cancelled" && toStatus == "cancelled")
+      );
+    }
+
+    function isOwnerOrderCancellation() {
+      return isSignedIn() &&
+        resource.data.userId == request.auth.uid &&
+        (resource.data.status == "placed" || resource.data.status == "processing" || resource.data.status == "shipped") &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(["status", "updatedAt"]) &&
+        request.resource.data.status == "cancelled";
+    }
+
+    function isAdminOrderStatusUpdate() {
+      return isAdmin() &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(["status", "updatedAt"]) &&
+        orderStatusTransitionIsValid(resource.data.status, request.resource.data.status);
+    }
+
+    function reviewCreatePayloadIsValid() {
+      return request.resource.data.keys().hasAll([
+          "productId",
+          "userId",
+          "userName",
+          "rating",
+          "text",
+          "mediaUrls",
+          "moderationStatus",
+          "createdAt",
+          "updatedAt"
+        ]) &&
+        request.resource.data.keys().hasOnly([
+          "productId",
+          "userId",
+          "userName",
+          "rating",
+          "text",
+          "mediaUrls",
+          "moderationStatus",
+          "createdAt",
+          "updatedAt"
+        ]) &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.userName is string &&
+        request.resource.data.userName.size() > 0 &&
+        request.resource.data.userName.size() <= 80 &&
+        request.resource.data.rating is number &&
+        request.resource.data.rating >= 1 &&
+        request.resource.data.rating <= 5 &&
+        request.resource.data.text is string &&
+        request.resource.data.text.size() > 0 &&
+        request.resource.data.text.size() <= 2000 &&
+        request.resource.data.mediaUrls is list &&
+        request.resource.data.moderationStatus == "pending";
+    }
+
+    function canReadReview() {
+      return resource.data.moderationStatus == "approved" || isAdmin() ||
+        (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    function messageCreatePayloadIsValid() {
+      return request.resource.data.keys().hasAll([
+          "anonymousName",
+          "text",
+          "moderationStatus",
+          "createdAt",
+          "updatedAt"
+        ]) &&
+        request.resource.data.keys().hasOnly([
+          "anonymousName",
+          "text",
+          "moderationStatus",
+          "createdAt",
+          "updatedAt",
+          "userId"
+        ]) &&
+        request.resource.data.anonymousName is string &&
+        request.resource.data.anonymousName.size() > 0 &&
+        request.resource.data.anonymousName.size() <= 40 &&
+        request.resource.data.text is string &&
+        request.resource.data.text.size() > 0 &&
+        request.resource.data.text.size() <= 500 &&
+        request.resource.data.moderationStatus == "pending" &&
+        (
+          !request.resource.data.keys().hasAny(["userId"]) ||
+          (isSignedIn() && request.resource.data.userId == request.auth.uid)
+        );
+    }
+
+    function canReadMessage() {
+      return resource.data.moderationStatus == "approved" || isAdmin();
+    }
+
+    function subscriptionCreatePayloadIsValid() {
+      return request.resource.data.keys().hasAll([
+          "userId",
+          "plan",
+          "productId",
+          "quantityKg",
+          "pricePerCycle",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]) &&
+        request.resource.data.keys().hasOnly([
+          "userId",
+          "plan",
+          "productId",
+          "quantityKg",
+          "pricePerCycle",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "stripeCustomerId",
+          "stripeSubscriptionId",
+          "nextDeliveryAt"
+        ]) &&
+        request.resource.data.userId == request.auth.uid &&
+        (request.resource.data.plan == "weekly" || request.resource.data.plan == "monthly") &&
+        request.resource.data.quantityKg is number &&
+        request.resource.data.quantityKg > 0 &&
+        request.resource.data.pricePerCycle is number &&
+        request.resource.data.pricePerCycle >= 0 &&
+        request.resource.data.status == "pending";
+    }
+
+    function ownerSubscriptionStatusUpdateAllowed() {
+      return isSignedIn() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(["status", "updatedAt"]) &&
+        (
+          (resource.data.status == "pending" && request.resource.data.status == "cancelled") ||
+          (resource.data.status == "active" &&
+            (request.resource.data.status == "paused" || request.resource.data.status == "cancelled")) ||
+          (resource.data.status == "paused" &&
+            (request.resource.data.status == "active" || request.resource.data.status == "cancelled")) ||
+          (resource.data.status == "cancelled" && request.resource.data.status == "cancelled")
+        );
+    }
+
+    function adminSubscriptionUpdateAllowed() {
+      return isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.email == request.auth.token.email &&
+        (
+          request.resource.data.role == "customer" ||
+          (request.resource.data.role == "admin" && isAllowlistedAdminEmail())
+        );
+      allow update: if isAdmin() || (
+        isOwner(userId) &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.email == resource.data.email &&
+        request.resource.data.role == resource.data.role
+      );
+      allow delete: if false;
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /orders/{orderId} {
+      allow create: if false;
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow update: if isOwnerOrderCancellation() || isAdminOrderStatusUpdate();
+      allow delete: if false;
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if canReadReview();
+      allow create: if isSignedIn() && reviewCreatePayloadIsValid();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /subscriptions/{subscriptionId} {
+      allow create: if false;
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /messages/{messageId} {
+      allow read: if canReadMessage();
+      allow create: if messageCreatePayloadIsValid();
+      allow update, delete: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "variagrofoods-functions",
+  "private": true,
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf lib",
+    "lint": "eslint --ext .ts src",
+    "serve": "firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.3.2",
+    "stripe": "^17.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "eslint": "^9.17.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.2"
+  }
+}
