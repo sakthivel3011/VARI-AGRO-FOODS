@@ -18,7 +18,7 @@ export const catalogProducts: CatalogProduct[] = [
     featured: true,
     isNewArrival: false,
     images: [
-      "https://images.unsplash.com/photo-1586201375761-83865001e31b?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1516684732162-798a0062be99?auto=format&fit=crop&w=1200&q=80",
       "https://images.unsplash.com/photo-1516684732162-798a0062be99?auto=format&fit=crop&w=1200&q=80",
     ],
     weightOptions: ["1kg", "5kg", "10kg"],

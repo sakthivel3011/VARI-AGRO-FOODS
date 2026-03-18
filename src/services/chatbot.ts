@@ -21,6 +21,7 @@ const averagePrice = (products: CatalogProduct[]): number => {
 
 export const answerChatbotQuestion = (input: string, context: ChatbotContext): ChatbotAnswer => {
   const normalized = input.trim().toLowerCase();
+  const compact = normalized.replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
 
   if (!normalized) {
     return {
@@ -30,6 +31,29 @@ export const answerChatbotQuestion = (input: string, context: ChatbotContext): C
         "What are delivery timelines?",
         "How does subscription work?",
       ],
+    };
+  }
+
+  const isGreeting =
+    /^(hi|hii+|hello|hey|namaste|good morning|good afternoon|good evening)$/.test(compact) ||
+    /^(hi|hii+|hello|hey)\b/.test(compact);
+
+  if (isGreeting) {
+    return {
+      text: "Hi! Welcome to Vari Agro Foods. I can help with products, pricing, delivery, subscriptions, order status, and payments.",
+      suggestions: ["Show premium rice", "What are delivery timelines?", "How does subscription work?"],
+    };
+  }
+
+  if (
+    compact.includes("project") ||
+    compact.includes("about project") ||
+    compact.includes("about vari agro") ||
+    compact.includes("about company")
+  ) {
+    return {
+      text: "Vari Agro Foods is a premium rice commerce project focused on quality grains, transparent pricing, online ordering, subscriptions, and order tracking in one platform.",
+      suggestions: ["Show product categories", "How to place an order?", "Tell me about subscriptions"],
     };
   }
 

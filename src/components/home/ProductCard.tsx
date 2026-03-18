@@ -1,8 +1,12 @@
 import { Star } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/hooks/useCart";
 import type { CatalogProduct, ProductPreviewCard } from "@/types/product";
+
+const DEFAULT_PRODUCT_IMAGE =
+  "https://images.unsplash.com/photo-1516684732162-798a0062be99?auto=format&fit=crop&w=1200&q=80";
 
 type ProductCardProps = {
   product: ProductPreviewCard;
@@ -10,6 +14,11 @@ type ProductCardProps = {
 
 export const ProductCard = ({ product }: ProductCardProps) => {
   const { addToCart } = useCart();
+  const [cardImage, setCardImage] = useState(product.image || DEFAULT_PRODUCT_IMAGE);
+
+  useEffect(() => {
+    setCardImage(product.image || DEFAULT_PRODUCT_IMAGE);
+  }, [product.image]);
 
   const mappedProduct: CatalogProduct = {
     id: product.id,
@@ -42,9 +51,10 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           </span>
         ) : null}
         <img
-          src={product.image}
+          src={cardImage}
           alt={product.name}
           loading="lazy"
+          onError={() => setCardImage(DEFAULT_PRODUCT_IMAGE)}
           className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
         />
       </div>
