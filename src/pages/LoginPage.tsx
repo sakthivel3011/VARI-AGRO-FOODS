@@ -3,7 +3,6 @@ import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock, Loader } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Container } from "@/components/layout/Container";
-import { Button } from "@/components/ui/Button";
 import { BackButton } from "@/components/ui/BackButton";
 import { useSeo } from "@/hooks/useSeo";
 
