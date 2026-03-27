@@ -9,6 +9,8 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_APP_ID?: string;
   readonly VITE_FIREBASE_MEASUREMENT_ID?: string;
   readonly VITE_ADMIN_EMAILS?: string;
+  readonly VITE_GROQ_API_KEY?: string;
+  readonly VITE_GROQ_MODEL?: string;
 }
 
 interface ImportMeta {
