@@ -214,7 +214,7 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
+      allow read: if isSignedIn();
       allow create: if isOwner(userId) &&
         request.resource.data.uid == request.auth.uid &&
         request.resource.data.email == request.auth.token.email &&
@@ -237,14 +237,14 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow create: if false;
-      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && orderCreatePayloadIsValid();
+      allow read: if isSignedIn();
       allow update: if isOwnerOrderCancellation() || isAdminOrderStatusUpdate();
       allow delete: if false;
     }
 
     match /reviews/{reviewId} {
-      allow read: if canReadReview();
+      allow read: if isSignedIn();
       allow create: if isSignedIn() && reviewCreatePayloadIsValid();
       allow update: if isAdmin();
       allow delete: if isAdmin();
@@ -252,13 +252,13 @@ service cloud.firestore {
 
     match /subscriptions/{subscriptionId} {
       allow create: if false;
-      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow read: if isSignedIn();
       allow update: if isAdmin();
       allow delete: if false;
     }
 
     match /messages/{messageId} {
-      allow read: if canReadMessage();
+      allow read: if isSignedIn();
       allow create: if messageCreatePayloadIsValid();
       allow update, delete: if isAdmin();
     }

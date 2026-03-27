@@ -10,6 +10,7 @@ import { loadModerationMessages, applyMessageModeration } from "@/services/admin
 import type { ReviewRecord } from "@/services/reviews";
 import type { MessageRecord } from "@/services/chat";
 import { useSeo } from "@/hooks/useSeo";
+import { demoMessages, demoReviews } from "@/data/adminDemoData";
 
 const ReviewsAdminPage = () => {
   useSeo({
@@ -21,6 +22,7 @@ const ReviewsAdminPage = () => {
   const [reviews, setReviews] = useState<ReviewRecord[]>([]);
   const [messages, setMessages] = useState<MessageRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusMessage, setStatusMessage] = useState("");
 
   const loadAll = async () => {
     try {
@@ -29,10 +31,15 @@ const ReviewsAdminPage = () => {
         loadModerationReviews(),
         loadModerationMessages(),
       ]);
-      setReviews(reviewItems);
-      setMessages(messageItems);
+      const useDemo = reviewItems.length === 0 && messageItems.length === 0;
+      setReviews(useDemo ? demoReviews : reviewItems);
+      setMessages(useDemo ? demoMessages : messageItems);
+      setStatusMessage(useDemo ? "Showing sample moderation queue for review." : "");
     } catch (error) {
       console.error("Failed to load moderation data", error);
+      setReviews(demoReviews);
+      setMessages(demoMessages);
+      setStatusMessage("Live moderation data unavailable. Showing sample data.");
     } finally {
       setLoading(false);
     }
@@ -66,6 +73,7 @@ const ReviewsAdminPage = () => {
       <h2 className="mt-2 font-heading text-3xl font-bold text-[#2b1f14]">Reviews</h2>
 
       {loading ? <p className="mt-4 text-sm text-[#5d554c]">Loading moderation queue...</p> : null}
+      {statusMessage ? <p className="mt-3 text-sm text-[#5d554c]">{statusMessage}</p> : null}
 
       <article className="mt-5 rounded-2xl border border-[#efe4d6] bg-white p-4 shadow-soft">
         <h3 className="font-heading text-xl font-bold text-[#2b1f14]">Customer Review Queue</h3>

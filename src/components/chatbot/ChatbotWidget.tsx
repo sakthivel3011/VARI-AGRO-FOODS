@@ -2,19 +2,17 @@ import { useMemo, useState } from "react";
 import { Bot, MessageCircleQuestion, Send, X } from "lucide-react";
 import { getStaticCatalogProducts } from "@/data/catalogProducts";
 import { answerChatbotQuestionAsync } from "@/services/chatbot";
+import { chatbotStarterMessages, chatbotSuggestedQuestions } from "@/data/chatDemoData";
 
 type ChatMessage = {
   role: "user" | "bot";
   text: string;
 };
 
-const initialBotMessage =
-  "Hi! I can help with rice types, prices, delivery timelines, subscriptions, order status, and payment options.";
-
 export const ChatbotWidget = () => {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([{ role: "bot", text: initialBotMessage }]);
+  const [messages, setMessages] = useState<ChatMessage[]>(chatbotStarterMessages);
   const products = useMemo(() => getStaticCatalogProducts(), []);
 
   const askBot = async (question: string) => {
@@ -82,6 +80,21 @@ export const ChatbotWidget = () => {
                 {message.text}
               </div>
             ))}
+            <div className="pt-1">
+              <p className="mb-2 text-[11px] uppercase tracking-[0.1em] text-[#7a6d5f]">Quick Questions</p>
+              <div className="flex flex-wrap gap-2">
+                {chatbotSuggestedQuestions.map((question) => (
+                  <button
+                    key={question}
+                    type="button"
+                    className="rounded-full border border-[#e8dfd1] bg-white px-3 py-1 text-xs text-[#5d554c]"
+                    onClick={() => void askBot(question)}
+                  >
+                    {question}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 border-t border-[#f1e6d8] bg-white p-3">

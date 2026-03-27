@@ -1,4 +1,5 @@
 import {
+  addDoc,
   collection,
   doc,
   getCountFromServer,
@@ -12,9 +13,7 @@ import {
   where,
   type DocumentData,
 } from "firebase/firestore";
-import { httpsCallable } from "firebase/functions";
 import { db } from "@/config/firebase";
-import { functions } from "@/config/firebase";
 import { collections } from "@/services/firestorePaths";
 import type { OrderDoc } from "@/types/firestore";
 
@@ -23,6 +22,9 @@ type CreateOrderInput = {
   items: Array<{
     productId: string;
     slug?: string;
+    name: string;
+    image: string;
+    unitPrice: number;
     quantity: number;
     weight: string;
   }>;
@@ -37,20 +39,34 @@ export type OrderRecord = {
 };
 
 export const createOrder = async (payload: CreateOrderInput): Promise<string> => {
-  const createOrderFn = httpsCallable<
-    CreateOrderInput,
-    { orderId: string }
-  >(functions, "createCashOnDeliveryOrder");
+  const subtotal = payload.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  const deliveryCharge = subtotal === 0 || subtotal >= 1200 ? 0 : 99;
+  const total = subtotal + deliveryCharge;
 
-  const response = await createOrderFn({
+  const orderRef = await addDoc(collection(db, collections.orders), {
     userId: payload.userId,
-    items: payload.items,
+    items: payload.items.map((item) => ({
+      productId: item.productId,
+      name: item.name,
+      image: item.image,
+      unitPrice: item.unitPrice,
+      quantity: item.quantity,
+      weight: item.weight,
+    })),
+    subtotal,
+    deliveryCharge,
+    total,
+    paymentMethod: "cod",
+    paymentStatus: "pending",
+    status: "placed",
     customerName: payload.customerName,
     phone: payload.phone,
     deliveryAddress: payload.deliveryAddress,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   });
 
-  return response.data.orderId;
+  return orderRef.id;
 };
 
 export const getUserOrders = async (uid: string): Promise<OrderRecord[]> => {

@@ -11,6 +11,7 @@ import {
   type TopProductMetric,
   type UserActivityMetric,
 } from "@/services/adminAnalytics";
+import { demoDailyMetrics, demoTopProducts, demoUserActivity } from "@/data/adminDemoData";
 
 const OverviewPage = () => {
   useSeo({
@@ -28,6 +29,7 @@ const OverviewPage = () => {
   const [daily, setDaily] = useState<DailyMetric[]>([]);
   const [topProducts, setTopProducts] = useState<TopProductMetric[]>([]);
   const [userActivity, setUserActivity] = useState<UserActivityMetric[]>([]);
+  const [statusMessage, setStatusMessage] = useState("");
 
   useEffect(() => {
     const run = async () => {
@@ -44,11 +46,25 @@ const OverviewPage = () => {
         setTotalRevenue(overview.totalRevenue);
         setTotalProducts(overview.totalProducts);
         setTopProductName(overview.topProductName);
-        setDaily(dayStats);
-        setTopProducts(top);
-        setUserActivity(users);
+        setDaily(dayStats.length === 0 ? demoDailyMetrics : dayStats);
+        setTopProducts(top.length === 0 ? demoTopProducts : top);
+        setUserActivity(users.length === 0 ? demoUserActivity : users);
+        setStatusMessage(
+          dayStats.length === 0 && top.length === 0 && users.length === 0
+            ? "Showing sample analytics for review."
+            : "",
+        );
       } catch (error) {
         console.error("Failed to load admin overview", error);
+        setDaily(demoDailyMetrics);
+        setTopProducts(demoTopProducts);
+        setUserActivity(demoUserActivity);
+        setTotalUsers(3);
+        setTotalOrders(2);
+        setTotalRevenue(1496);
+        setTotalProducts(6);
+        setTopProductName("Royal Basmati Gold");
+        setStatusMessage("Live analytics unavailable. Showing sample data.");
       } finally {
         setLoading(false);
       }
@@ -194,6 +210,7 @@ const OverviewPage = () => {
       </div>
 
       {loading ? <p className="mt-5 text-sm text-[#7a6d5f]">Loading analytics...</p> : null}
+      {statusMessage ? <p className="mt-3 text-sm text-[#5d554c]">{statusMessage}</p> : null}
       <p className="mt-4 text-xs uppercase tracking-[0.11em] text-[#7a6d5f]">
         Products in catalog: {totalProducts.toLocaleString()}
       </p>

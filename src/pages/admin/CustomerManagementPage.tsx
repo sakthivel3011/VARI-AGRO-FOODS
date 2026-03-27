@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getAllUsers, type UserRecord } from "@/services/users";
 import { getAllOrders, type OrderRecord } from "@/services/orders";
 import { useSeo } from "@/hooks/useSeo";
+import { demoOrders, demoUsers } from "@/data/adminDemoData";
 
 const CustomerManagementPage = () => {
   useSeo({
@@ -12,15 +13,21 @@ const CustomerManagementPage = () => {
 
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [orders, setOrders] = useState<OrderRecord[]>([]);
+  const [statusMessage, setStatusMessage] = useState("");
 
   useEffect(() => {
     const run = async () => {
       try {
         const [userItems, orderItems] = await Promise.all([getAllUsers(300), getAllOrders(900)]);
-        setUsers(userItems);
-        setOrders(orderItems);
+        const useDemo = userItems.length === 0 && orderItems.length === 0;
+        setUsers(useDemo ? demoUsers : userItems);
+        setOrders(useDemo ? demoOrders : orderItems);
+        setStatusMessage(useDemo ? "Showing sample customer insights for review." : "");
       } catch (error) {
         console.error("Failed to load customer management data", error);
+        setUsers(demoUsers);
+        setOrders(demoOrders);
+        setStatusMessage("Live customer data unavailable. Showing sample data.");
       }
     };
 
@@ -42,6 +49,7 @@ const CustomerManagementPage = () => {
       <h2 className="mt-2 font-heading text-3xl font-bold text-[#2b1f14]">Purchase History Insights</h2>
 
       <div className="mt-5 space-y-3">
+        {statusMessage ? <p className="text-sm text-[#5d554c]">{statusMessage}</p> : null}
         {users.map((user) => {
           const userStats = stats.get(user.id) ?? { count: 0, spend: 0 };
 

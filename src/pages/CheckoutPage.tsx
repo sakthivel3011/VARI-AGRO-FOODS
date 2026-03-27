@@ -87,6 +87,9 @@ const CheckoutPage = () => {
         items: items.map((item) => ({
           productId: item.productId,
           slug: item.slug,
+          name: item.name,
+          image: item.image,
+          unitPrice: item.unitPrice,
           quantity: item.quantity,
           weight: item.weight,
         })),

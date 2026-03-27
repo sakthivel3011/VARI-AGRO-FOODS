@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/Button";
 import { applyMessageModeration, loadModerationMessages } from "@/services/adminMessageModeration";
 import type { MessageRecord } from "@/services/chat";
 import { useSeo } from "@/hooks/useSeo";
+import { demoMessages } from "@/data/adminDemoData";
 
 const MessagesAdminPage = () => {
   useSeo({
@@ -13,14 +14,23 @@ const MessagesAdminPage = () => {
 
   const [messages, setMessages] = useState<MessageRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusMessage, setStatusMessage] = useState("");
 
   const loadMessages = async () => {
     try {
       setLoading(true);
       const data = await loadModerationMessages();
-      setMessages(data);
+      if (data.length === 0) {
+        setMessages(demoMessages);
+        setStatusMessage("Showing sample messages for review.");
+      } else {
+        setMessages(data);
+        setStatusMessage("");
+      }
     } catch (error) {
       console.error("Failed to load message moderation queue", error);
+      setMessages(demoMessages);
+      setStatusMessage("Live messages unavailable. Showing sample data.");
     } finally {
       setLoading(false);
     }
@@ -45,6 +55,7 @@ const MessagesAdminPage = () => {
       <h2 className="mt-2 font-heading text-3xl font-bold text-[#2b1f14]">Community Messages</h2>
 
       {loading ? <p className="mt-4 text-sm text-[#5d554c]">Loading messages...</p> : null}
+      {statusMessage ? <p className="mt-3 text-sm text-[#5d554c]">{statusMessage}</p> : null}
 
       <div className="mt-5 space-y-3">
         {messages.map((message) => (

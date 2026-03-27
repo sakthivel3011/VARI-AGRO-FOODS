@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getAllUsers, type UserRecord } from "@/services/users";
 import { useSeo } from "@/hooks/useSeo";
+import { demoUsers } from "@/data/adminDemoData";
 
 const UsersAdminPage = () => {
   useSeo({
@@ -11,15 +12,24 @@ const UsersAdminPage = () => {
 
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusMessage, setStatusMessage] = useState("");
 
   useEffect(() => {
     const run = async () => {
       try {
         setLoading(true);
         const userRecords = await getAllUsers(300);
-        setUsers(userRecords);
+        if (userRecords.length === 0) {
+          setUsers(demoUsers);
+          setStatusMessage("Showing sample users for review.");
+        } else {
+          setUsers(userRecords);
+          setStatusMessage("");
+        }
       } catch (error) {
         console.error("Failed to load users", error);
+        setUsers(demoUsers);
+        setStatusMessage("Live users unavailable. Showing sample data.");
       } finally {
         setLoading(false);
       }
@@ -39,6 +49,7 @@ const UsersAdminPage = () => {
         </p>
       ) : (
         <div className="mt-5 space-y-3">
+          {statusMessage ? <p className="text-sm text-[#5d554c]">{statusMessage}</p> : null}
           {users.map((user) => (
             <article key={user.id} className="rounded-xl border border-[#efe4d6] bg-[#fffcf8] p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">

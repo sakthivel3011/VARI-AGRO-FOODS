@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { cancelOrderByUser, getUserOrders } from "@/services/orders";
 import type { OrderRecord } from "@/services/orders";
 import { useSeo } from "@/hooks/useSeo";
+import { demoOrders } from "@/data/adminDemoData";
 
 const OrdersPage = () => {
   useSeo({
@@ -27,9 +28,15 @@ const OrdersPage = () => {
 
     try {
       const items = await getUserOrders(user.uid);
-      setOrders(items);
+      if (items.length === 0) {
+        setOrders([demoOrders[0]]);
+        setStatus("Showing sample order data for review.");
+      } else {
+        setOrders(items);
+      }
     } catch {
-      setOrders([]);
+      setOrders([demoOrders[0]]);
+      setStatus("Live orders unavailable. Showing sample data.");
     } finally {
       setLoading(false);
     }

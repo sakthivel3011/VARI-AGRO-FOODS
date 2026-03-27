@@ -8,6 +8,7 @@ import {
   type UserActivityMetric,
 } from "@/services/adminAnalytics";
 import { useSeo } from "@/hooks/useSeo";
+import { demoDailyMetrics, demoTopProducts, demoUserActivity } from "@/data/adminDemoData";
 
 const AnalyticsAdminPage = () => {
   useSeo({
@@ -20,6 +21,7 @@ const AnalyticsAdminPage = () => {
   const [topProducts, setTopProducts] = useState<TopProductMetric[]>([]);
   const [activity, setActivity] = useState<UserActivityMetric[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusMessage, setStatusMessage] = useState("");
 
   useEffect(() => {
     const run = async () => {
@@ -31,10 +33,19 @@ const AnalyticsAdminPage = () => {
         ]);
 
         setDaily(dailyData);
-        setTopProducts(topData);
-        setActivity(userData);
+        setTopProducts(topData.length === 0 ? demoTopProducts : topData);
+        setActivity(userData.length === 0 ? demoUserActivity : userData);
+        setStatusMessage(
+          dailyData.length === 0 && topData.length === 0 && userData.length === 0
+            ? "Showing sample analytics for review."
+            : "",
+        );
       } catch (error) {
         console.error("Failed to load analytics", error);
+        setDaily(demoDailyMetrics);
+        setTopProducts(demoTopProducts);
+        setActivity(demoUserActivity);
+        setStatusMessage("Live analytics unavailable. Showing sample data.");
       } finally {
         setLoading(false);
       }
@@ -53,6 +64,7 @@ const AnalyticsAdminPage = () => {
       <h2 className="mt-2 font-heading text-3xl font-bold text-[#2b1f14]">Performance Metrics</h2>
 
       {loading ? <p className="mt-4 text-sm text-[#5d554c]">Loading analytics charts...</p> : null}
+      {statusMessage ? <p className="mt-3 text-sm text-[#5d554c]">{statusMessage}</p> : null}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <article className="rounded-2xl border border-[#efe4d6] bg-white p-5 shadow-soft">

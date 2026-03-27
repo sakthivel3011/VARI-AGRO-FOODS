@@ -8,6 +8,7 @@ import {
   subscribeCommunityChat,
 } from "@/services/realtimeChat";
 import type { MessageRecord } from "@/services/chat";
+import { communitySampleMessages } from "@/data/chatDemoData";
 
 const formatTime = (raw: unknown): string => {
   if (!raw || typeof raw !== "object") {
@@ -44,7 +45,11 @@ export const AnonymousChatWidget = () => {
     return () => unsubscribe();
   }, []);
 
-  const orderedMessages = useMemo(() => [...messages].reverse(), [messages]);
+  const orderedMessages = useMemo(() => {
+    const source = messages.length > 0 ? messages : communitySampleMessages;
+    return [...source].reverse();
+  }, [messages]);
+  const usingSampleData = messages.length === 0;
 
   const submitMessage = async () => {
     const text = draft.trim();
@@ -86,6 +91,9 @@ export const AnonymousChatWidget = () => {
 
           <div className="border-b border-[#f1e6d8] px-3 py-2">
             <p className="text-[11px] text-[#7a6d5f]">{moderationHint}</p>
+            {usingSampleData ? (
+              <p className="mt-1 text-[11px] text-[#7a6d5f]">Showing sample community messages for review.</p>
+            ) : null}
             <label className="text-[11px] uppercase tracking-[0.1em] text-[#7a6d5f]">Anonymous Name</label>
             <input
               value={anonymousName}

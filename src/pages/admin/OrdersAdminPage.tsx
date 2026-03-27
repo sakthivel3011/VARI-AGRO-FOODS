@@ -4,6 +4,7 @@ import { OrderStatusPill } from "@/components/admin/OrderStatusPill";
 import { getAllOrders, updateOrderStatus, type OrderRecord } from "@/services/orders";
 import type { OrderDoc } from "@/types/firestore";
 import { useSeo } from "@/hooks/useSeo";
+import { demoOrders } from "@/data/adminDemoData";
 
 const statusSequence: OrderDoc["status"][] = ["placed", "processing", "shipped", "delivered"];
 
@@ -29,14 +30,23 @@ const OrdersAdminPage = () => {
 
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusMessage, setStatusMessage] = useState("");
 
   const loadOrders = async () => {
     try {
       setLoading(true);
       const data = await getAllOrders(250);
-      setOrders(data);
+      if (data.length === 0) {
+        setOrders(demoOrders);
+        setStatusMessage("Showing sample orders for review.");
+      } else {
+        setOrders(data);
+        setStatusMessage("");
+      }
     } catch (error) {
       console.error("Failed to load admin orders", error);
+      setOrders(demoOrders);
+      setStatusMessage("Live orders unavailable. Showing sample data.");
     } finally {
       setLoading(false);
     }
@@ -75,6 +85,7 @@ const OrdersAdminPage = () => {
         </p>
       ) : (
         <div className="mt-5 space-y-3">
+          {statusMessage ? <p className="text-sm text-[#5d554c]">{statusMessage}</p> : null}
           {orders.map((order) => (
             <article key={order.id} className="rounded-xl border border-[#efe4d6] bg-[#fffcf8] p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
