@@ -76,23 +76,39 @@ const resolveOrderItemsFromCatalog = async (payloadItems) => {
     const productsMap = new Map();
     for (const rawItem of payloadItems) {
         const productId = String(rawItem.productId ?? "").trim();
+        const slug = String(rawItem.slug ?? "").trim();
         if (!productId) {
             throw new https_1.HttpsError("invalid-argument", "Invalid product reference.");
         }
         if (!productsMap.has(productId)) {
-            const productSnapshot = await db.collection("products").doc(productId).get();
-            if (!productSnapshot.exists) {
-                throw new https_1.HttpsError("invalid-argument", `Product not found: ${productId}`);
+            let productSnapshot = await db.collection("products").doc(productId).get();
+            if (!productSnapshot.exists && slug) {
+                const bySlugSnapshot = await db
+                    .collection("products")
+                    .where("slug", "==", slug)
+                    .limit(1)
+                    .get();
+                if (!bySlugSnapshot.empty) {
+                    productSnapshot = bySlugSnapshot.docs[0];
+                }
             }
-            productsMap.set(productId, (productSnapshot.data() ?? {}));
+            if (!productSnapshot.exists) {
+                throw new https_1.HttpsError("invalid-argument", `Product not found: ${productId}${slug ? ` (${slug})` : ""}`);
+            }
+            productsMap.set(productId, {
+                id: productSnapshot.id,
+                data: (productSnapshot.data() ?? {}),
+            });
         }
     }
     return payloadItems.map((rawItem) => {
-        const productId = String(rawItem.productId).trim();
-        const product = productsMap.get(productId);
-        if (!product) {
-            throw new https_1.HttpsError("invalid-argument", `Product not found: ${productId}`);
+        const requestedProductId = String(rawItem.productId).trim();
+        const resolvedProduct = productsMap.get(requestedProductId);
+        if (!resolvedProduct) {
+            throw new https_1.HttpsError("invalid-argument", `Product not found: ${requestedProductId}`);
         }
+        const productId = resolvedProduct.id;
+        const product = resolvedProduct.data;
         const quantity = Math.max(1, Math.floor(toNumber(rawItem.quantity)));
         const weight = normalizeWeight(rawItem.weight);
         const image = Array.isArray(product.images) && product.images.length > 0 ? String(product.images[0]) : "";
@@ -138,7 +154,7 @@ const getAllowlistedAdminEmails = () => {
 const getBaseUrl = () => {
     return process.env.PUBLIC_WEB_URL ?? "http://localhost:5173";
 };
-exports.setAdminRole = (0, https_1.onCall)(async (request) => {
+exports.setAdminRole = (0, https_1.onCall)({ cors: true }, async (request) => {
     const auth = request.auth;
     if (!auth?.token?.email) {
         throw new https_1.HttpsError("unauthenticated", "Login required.");
@@ -154,7 +170,7 @@ exports.setAdminRole = (0, https_1.onCall)(async (request) => {
     }, { merge: true });
     return { role: "admin" };
 });
-exports.createStripeCheckoutSession = (0, https_1.onCall)(async (request) => {
+exports.createStripeCheckoutSession = (0, https_1.onCall)({ cors: true }, async (request) => {
     const auth = request.auth;
     if (!auth?.uid || !auth.token.email) {
         throw new https_1.HttpsError("unauthenticated", "Login required.");
@@ -217,7 +233,7 @@ exports.createStripeCheckoutSession = (0, https_1.onCall)(async (request) => {
         checkoutUrl: session.url,
     };
 });
-exports.createStripeSubscriptionCheckout = (0, https_1.onCall)(async (request) => {
+exports.createStripeSubscriptionCheckout = (0, https_1.onCall)({ cors: true }, async (request) => {
     const auth = request.auth;
     if (!auth?.uid || !auth.token.email) {
         throw new https_1.HttpsError("unauthenticated", "Login required.");
@@ -274,7 +290,7 @@ exports.createStripeSubscriptionCheckout = (0, https_1.onCall)(async (request) =
         checkoutUrl: session.url,
     };
 });
-exports.createCashOnDeliveryOrder = (0, https_1.onCall)(async (request) => {
+exports.createCashOnDeliveryOrder = (0, https_1.onCall)({ cors: true }, async (request) => {
     const auth = request.auth;
     if (!auth?.uid) {
         throw new https_1.HttpsError("unauthenticated", "Login required.");
@@ -314,7 +330,7 @@ exports.createCashOnDeliveryOrder = (0, https_1.onCall)(async (request) => {
         total: totals.total,
     };
 });
-exports.updateUserSubscriptionStatus = (0, https_1.onCall)(async (request) => {
+exports.updateUserSubscriptionStatus = (0, https_1.onCall)({ cors: true }, async (request) => {
     const auth = request.auth;
     if (!auth?.uid) {
         throw new https_1.HttpsError("unauthenticated", "Login required.");

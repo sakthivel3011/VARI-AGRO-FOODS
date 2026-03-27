@@ -22,6 +22,7 @@ type CreateOrderInput = {
   userId: string;
   items: Array<{
     productId: string;
+    slug?: string;
     quantity: number;
     weight: string;
   }>;

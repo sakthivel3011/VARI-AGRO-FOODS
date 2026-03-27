@@ -22,9 +22,14 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       return;
     }
 
-    await upsertUserProfile(nextUser);
-    const nextProfile = await getUserProfile(nextUser.uid);
-    setProfile(nextProfile);
+    try {
+      await upsertUserProfile(nextUser);
+      const nextProfile = await getUserProfile(nextUser.uid);
+      setProfile(nextProfile);
+    } catch (error) {
+      console.error("Failed to sync user profile", error);
+      setProfile(null);
+    }
   }, []);
 
   useEffect(() => {
